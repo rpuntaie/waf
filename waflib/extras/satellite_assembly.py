@@ -39,7 +39,7 @@ def satellite_assembly(self):
 			lang = mo.group(2)
 			#./Resources/resources.de.resources
 			resources = self.path.find_or_declare(res+ '.' + lang + '.resources')
-			self.create_task('resgen', self.to_nodes(x), [resources])
+			self.create_task('rc', self.to_nodes(x), [resources])
 			#./de/Exename.resources.dll
 			satellite = self.path.find_or_declare(os.path.join(templatedir,lang,templatename) + '.resources.dll')
 			tsk = self.create_task('al',[resources],[satellite])
@@ -53,5 +53,5 @@ def satellite_assembly(self):
 
 def configure(ctx):
 	ctx.find_program('al', var='AL', mandatory=True)
-	ctx.load('resx')
+	ctx.load('winres')
 
