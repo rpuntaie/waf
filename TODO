@@ -1,23 +1,10 @@
 Waf 1.9
 -------
 
-* Reduce the key size in bld.task_sigs
-* Provide a more efficient ConfigSet implementation
-* Remove the split functions from Utils
-* Ensure _cache.py are valid python files
-* Include the tool 'nobuild' by default
-* Set cflags in the beginning / cppflags at the end
-* Remove qt4 from the default modules, rework qt5
-* Remove the command called "update"
-* Remove Node.cache_sig
-* Make lazy visual studio detection the default
-* Do not cache waf tool detection
-* Fix the vala detection
-* Better consistency between check_cfg and check_cc variables
-* Detect Clang by default on FreeBSD instead of gcc
-* Use relative paths in apply_incpaths (and absolute ones when paths cross drives)
-* Let run_once accept a list of *args
-* Let more context commands depend on the configuration
+Documentation
 
-and all other issues listed on https://github.com/waf-project/waf/issues
+Waf 2.0
+-------
+
+See the branch waf-2.0 for details
 
