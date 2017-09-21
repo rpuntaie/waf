@@ -5,7 +5,7 @@
 
 import re
 from waflib import Task, Logs
-from waflib.TaskGen import extension
+from waflib.TaskGen import extension, feature, after_method
 from waflib.Configure import conf
 from waflib.Tools import c_preproc
 
@@ -95,6 +95,7 @@ class swig(Task.Task):
 swig_langs = {}
 def swigf(fun):
 	swig_langs[fun.__name__.replace('swig_', '')] = fun
+	return fun
 swig.swigf = swigf
 
 def swig_c(self):
@@ -112,7 +113,7 @@ def swig_c(self):
 	c_tsk.set_run_after(self)
 
 	ge = self.generator.bld.producer
-	ge.outstanding.appendleft(c_tsk)
+	ge.outstanding.append(c_tsk)
 	ge.total += 1
 
 	try:
@@ -121,7 +122,11 @@ def swig_c(self):
 		pass
 	else:
 		ltask.set_run_after(c_tsk)
+		# setting input nodes does not declare the build order
+		# because the build already started
 		ltask.inputs.append(c_tsk.outputs[0])
+		# set the build order after the build started:
+		ge.revdeps[c_tsk].add(ltask)
 
 	self.outputs.append(out_node)
 
@@ -159,6 +164,18 @@ def i_file(self, node):
 		outdir = tsk.generator.bld.bldnode.make_node(outdir)
 		outdir.mkdir()
 		tsk.outdir = outdir
+
+@feature('c', 'cxx', 'd', 'fc', 'asm')
+@after_method('apply_link', 'process_source')
+def enforce_swig_before_link(self):
+	try:
+		link_task = self.link_task
+	except AttributeError:
+		pass
+	else:
+		for x in self.tasks:
+			if x.__class__.__name__ == 'swig':
+				link_task.run_after.add(x)
 
 @conf
 def check_swig_version(conf, minver=None):

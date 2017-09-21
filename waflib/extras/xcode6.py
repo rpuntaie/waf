@@ -470,7 +470,7 @@ class PBXProject(XCodeNode):
 		return None
 
 @TaskGen.feature('c', 'cxx')
-@TaskGen.after('process_uselib_vars', 'apply_incpaths')
+@TaskGen.after('propagate_uselib_vars', 'apply_incpaths')
 def process_xcode(self):
 	bld = self.bld
 	try:
@@ -556,15 +556,21 @@ def process_xcode(self):
 	target.add_build_phase(buildphase)
 
 	# Merge frameworks and libs into one list, and prefix the frameworks
-	ld_flags = ['-framework %s' % lib.split('.framework')[0] for lib in Utils.to_list(self.env.FRAMEWORK)]
-	ld_flags.extend(Utils.to_list(self.env.STLIB) + Utils.to_list(self.env.LIB))
+	frameworks = Utils.to_list(self.env.FRAMEWORK)
+	frameworks = ' '.join(['-framework %s' % (f.split('.framework')[0]) for f in frameworks])
+
+	libs = Utils.to_list(self.env.STLIB) + Utils.to_list(self.env.LIB)
+	libs = ' '.join(bld.env['STLIB_ST'] % t for t in libs)
 
 	# Override target specific build settings
 	bldsettings = {
 		'HEADER_SEARCH_PATHS': ['$(inherited)'] + self.env['INCPATHS'],
-		'LIBRARY_SEARCH_PATHS': ['$(inherited)'] + Utils.to_list(self.env.LIBPATH) + Utils.to_list(self.env.STLIBPATH),
+		'LIBRARY_SEARCH_PATHS': ['$(inherited)'] + Utils.to_list(self.env.LIBPATH) + Utils.to_list(self.env.STLIBPATH) + Utils.to_list(self.env.LIBDIR) ,
 		'FRAMEWORK_SEARCH_PATHS': ['$(inherited)'] + Utils.to_list(self.env.FRAMEWORKPATH),
-		'OTHER_LDFLAGS': r'\n'.join(ld_flags),
+		'OTHER_LDFLAGS': libs + ' ' + frameworks,
+		'OTHER_LIBTOOLFLAGS': bld.env['LINKFLAGS'],
+		'OTHER_CPLUSPLUSFLAGS': Utils.to_list(self.env['CXXFLAGS']),
+		'OTHER_CFLAGS': Utils.to_list(self.env['CFLAGS']),
 		'INSTALL_PATH': []
 	}
 
@@ -672,6 +678,9 @@ class xcode(Build.BuildContext):
 
 		# post all task generators
 		# the process_xcode method above will be called for each target
+		if self.targets and self.targets != '*':
+			(self._min_grp, self._exact_tg) = self.get_targets()
+
 		self.current_group = 0
 		while self.current_group < len(self.groups):
 			self.post_group()

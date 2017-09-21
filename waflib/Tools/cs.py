@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2017 (ita)
 
 """
 C# support. A simple example::
@@ -103,10 +103,10 @@ def debug_cs(self):
 	else:
 		out = node.change_ext('.pdb')
 	self.cs_task.outputs.append(out)
-	try:
-		self.install_task.source.append(out)
-	except AttributeError:
-		pass
+
+	if getattr(self, 'install_task', None):
+		self.pdb_install_task = self.add_install_files(
+			install_to=self.install_task.install_to, install_from=out)
 
 	if csdebug == 'pdbonly':
 		val = ['/debug+', '/debug:pdbonly']
@@ -116,6 +116,29 @@ def debug_cs(self):
 		val = ['/debug-']
 	self.env.append_value('CSFLAGS', val)
 
+@feature('cs')
+@after_method('debug_cs')
+def doc_cs(self):
+	"""
+	The C# targets may create .xml documentation files::
+
+		def build(bld):
+			bld(features='cs', source='My.cs', bintype='library', gen='my.dll', csdoc=True)
+			# csdoc is a boolean value
+	"""
+	csdoc = getattr(self, 'csdoc', self.env.CSDOC)
+	if not csdoc:
+		return
+
+	node = self.cs_task.outputs[0]
+	out = node.change_ext('.xml')
+	self.cs_task.outputs.append(out)
+
+	if getattr(self, 'install_task', None):
+		self.doc_install_task = self.add_install_files(
+			install_to=self.install_task.install_to, install_from=out)
+
+	self.env.append_value('CSFLAGS', '/doc:%s' % out.abspath())
 
 class mcs(Task.Task):
 	"""
@@ -124,10 +147,16 @@ class mcs(Task.Task):
 	color   = 'YELLOW'
 	run_str = '${MCS} ${CSTYPE} ${CSFLAGS} ${ASS_ST:ASSEMBLIES} ${RES_ST:RESOURCES} ${OUT} ${SRC}'
 
-	def exec_command(self, cmd, **kw):
-		if '/noconfig' in cmd:
-			raise ValueError('/noconfig is not allowed when using response files, check your flags!')
-		return super(self.__class__, self).exec_command(cmd, **kw)
+	def split_argfile(self, cmd):
+		inline = [cmd[0]]
+		infile = []
+		for x in cmd[1:]:
+			# csc doesn't want /noconfig in @file
+			if x.lower() == '/noconfig':
+				inline.append(x)
+			else:
+				infile.append(self.quote_flag(x))
+		return (inline, infile)
 
 def configure(conf):
 	"""

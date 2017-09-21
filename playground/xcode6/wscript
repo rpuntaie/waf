@@ -43,6 +43,8 @@ def configure(conf):
 	# This must be called at the end of configure()
 	conf.load('compiler_cxx xcode6')
 
+	conf.env.append_value('CXXFLAGS', ['-O2'])
+
 	conf.check(cxxflags='-std=c++11', uselib_store='STD11', mandatory=False)
 
 def build(bld):
@@ -87,7 +89,7 @@ def build(bld):
 		source=['src/test.cpp'],
 		includes='include',
 		target='MyExe',
-		use='MyDynLib'
+		use='MyDynLib STD11'
 	)
 
 	# Make .dylib shared libraries
@@ -104,7 +106,7 @@ def build(bld):
 		target='MyApp',
 		use='MyLib',
 		uselib='SDL2',
-		cxxflags='-O3',
+		cxxflags='-DSOME_DEFINE',
 		framework='Cocoa',
 		# Override default setting in a target
 		settings={"Debug": {"CONFIG_NAME": 'Debug'}}

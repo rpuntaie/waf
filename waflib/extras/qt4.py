@@ -52,7 +52,7 @@ You also need to edit your sources accordingly:
         incs = set(self.to_list(getattr(self, 'includes', '')))
         for x in self.compiled_tasks:
             incs.add(x.inputs[0].parent.path_from(self.path))
-        self.includes = list(incs)
+        self.includes = sorted(incs)
 
 Note: another tool provides Qt processing that does not require
 .moc includes, see 'playground/slow_qt/'.
@@ -155,7 +155,7 @@ class qxx(Task.classes['cxx']):
 
 			# direct injection in the build phase (safe because called from the main thread)
 			gen = self.generator.bld.producer
-			gen.outstanding.appendleft(tsk)
+			gen.outstanding.append(tsk)
 			gen.total += 1
 
 			return tsk

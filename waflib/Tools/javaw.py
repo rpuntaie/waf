@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2017 (ita)
 
 """
 Java support
@@ -107,6 +107,7 @@ def apply_java(self):
 		tsk.env.append_value('JAVACFLAGS', ['-sourcepath', names])
 
 @feature('javac')
+@before_method('propagate_uselib_vars')
 @after_method('apply_java')
 def use_javac_files(self):
 	"""
@@ -165,7 +166,7 @@ def jar_files(self):
 	if manifest:
 		jarcreate = getattr(self, 'jarcreate', 'cfm')
 		if not isinstance(manifest,Node.Node):
-			node = self.path.find_or_declare(manifest)
+			node = self.path.find_resource(manifest)
 		else:
 			node = manifest
 		tsk.dep_nodes.append(node)
@@ -239,7 +240,6 @@ class jar_create(JTask):
 			if not t.hasrun:
 				return Task.ASK_LATER
 		if not self.inputs:
-			global JAR_RE
 			try:
 				self.inputs = [x for x in self.basedir.ant_glob(JAR_RE, remove=False) if id(x) != id(self.outputs[0])]
 			except Exception:
@@ -272,7 +272,6 @@ class javac(JTask):
 				return Task.ASK_LATER
 
 		if not self.inputs:
-			global SOURCE_RE
 			self.inputs  = []
 			for x in self.srcdir:
 				self.inputs.extend(x.ant_glob(SOURCE_RE, remove=False))

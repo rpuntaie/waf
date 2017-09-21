@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2017 (ita)
 
 """
 Classes and methods shared by tools providing support for C-like language such
@@ -130,6 +130,9 @@ class link_task(Task.Task):
 	.. inheritance-diagram:: waflib.Tools.ccroot.stlink_task waflib.Tools.c.cprogram waflib.Tools.c.cshlib waflib.Tools.cxx.cxxstlib  waflib.Tools.cxx.cxxprogram waflib.Tools.cxx.cxxshlib waflib.Tools.d.dprogram waflib.Tools.d.dshlib waflib.Tools.d.dstlib waflib.Tools.ccroot.fake_shlib waflib.Tools.ccroot.fake_stlib waflib.Tools.asm.asmprogram waflib.Tools.asm.asmshlib waflib.Tools.asm.asmstlib
 	"""
 	color   = 'YELLOW'
+
+	weight  = 3
+	"""Try to process link tasks as early as possible"""
 
 	inst_to = None
 	"""Default installation path for the link task outputs, or None to disable"""
@@ -270,7 +273,7 @@ def apply_link(self):
 	try:
 		inst_to = self.install_path
 	except AttributeError:
-		inst_to = self.link_task.__class__.inst_to
+		inst_to = self.link_task.inst_to
 	if inst_to:
 		# install a copy of the node list we have at this moment (implib not added)
 		self.install_task = self.add_install_files(
@@ -393,7 +396,8 @@ def process_use(self):
 				self.add_objects_from_tgen(y)
 
 		if getattr(y, 'export_includes', None):
-			self.includes.extend(y.to_incnodes(y.export_includes))
+			# self.includes may come from a global variable #2035
+			self.includes += y.to_incnodes(y.export_includes)
 
 		if getattr(y, 'export_defines', None):
 			self.env.append_value('DEFINES', self.to_list(y.export_defines))
@@ -595,7 +599,7 @@ def apply_vnum(self):
 		self.create_task('vnum', node, outs)
 
 	if getattr(self, 'install_task', None):
-		self.install_task.hasrun = Task.SKIP_ME
+		self.install_task.hasrun = Task.SKIPPED
 		path = self.install_task.install_to
 		if self.env.DEST_OS == 'openbsd':
 			libname = self.link_task.outputs[0].name
@@ -615,7 +619,7 @@ def apply_vnum(self):
 		try:
 			inst_to = self.install_path
 		except AttributeError:
-			inst_to = self.link_task.__class__.inst_to
+			inst_to = self.link_task.inst_to
 		if inst_to:
 			p = Utils.subst_vars(inst_to, self.env)
 			path = os.path.join(p, name2)

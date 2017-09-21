@@ -74,11 +74,8 @@ def build(bld):
 		vnum = '1.2.3',
 		use  = 'mylib')
 
-
-	# Swig forces a dynamic build therefore a build group is necessary
-	from waflib import Build
-	bld.post_mode = Build.POST_LAZY
 	bld.add_group()
+
 	python_site_package = '${PREFIX}/lib/python%s/site-packages' % bld.env.PYTHON_VERSION
 	generated_py = bld.path.find_or_declare('extend/python/test_swig_waf.py')
 	bld(features='py', source=generated_py, install_path=python_site_package, install_from=bld.path.get_bld())
@@ -169,7 +166,7 @@ def exec_test_python(bld):
 		proc = subprocess.Popen('''
 PYTHONPATH=$PYTHONPATH:build/extend/python
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:build/extend/python:build/extend
-python -c "import test_swig_waf; a=test_swig_waf.A(); print 'Testing: a.add(2, 3) ->', a.add(2, 3)"
+python -c "import test_swig_waf; a=test_swig_waf.A(); print('Testing: a.add(2, 3) -> %r' % a.add(2, 3))"
 '''.replace('\n', ' '), shell=True)
 		proc.wait()
 	except:

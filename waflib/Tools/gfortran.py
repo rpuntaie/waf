@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # DC 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2017 (ita)
 
 import re
 from waflib import Utils
@@ -90,3 +90,4 @@ def configure(conf):
 	conf.fc_add_flags()
 	conf.gfortran_flags()
 	conf.gfortran_modifier_platform()
+	conf.check_gfortran_o_space()
