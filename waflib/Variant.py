@@ -6,7 +6,7 @@
 
 - x_variant commandline arguments are created
   for x in {configure, build, clean, install, uninstall}
-- an x command line argument is expanded to all x_variant's 
+- an x command line argument is expanded to all x_variant's
 - the associated x function context contains :py:const:`variant`
 
 Variant strings can use the `/` path separator to produce an according output tree.
