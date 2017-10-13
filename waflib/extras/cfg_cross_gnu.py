@@ -81,6 +81,13 @@ This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH)
 				else:#configure for pc SW
 						...
 
+		def build(bld):
+				if 'fw' in bld.variant:#firmware
+						bld.program(source='maintst.c',target='maintst');
+						bld(source='maintst.elf',target='maintst.hex',rule="xc16-bin2hex ${SRC} -a -omf=elf")  
+				else:#build for pc SW
+						...
+
 """
 
 import os
