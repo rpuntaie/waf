@@ -16,14 +16,17 @@ The variables are obtained from the environment in 3 ways:
 2. By defining HOST_x
 3. By defining ${CHOST//-/_}_x
 
+else on can set ``cfg.DEST_OS``.
+
 Usage:
 
 - In your build script::
 
     def configure(cfg):
       ...
-      conf.load('c_cross_gnu')
+      conf.load('cfg_cross_gnu')
       for variant in x_variants:
+		setenv(variant)
         conf.xcheck_host()
         conf.xcheck_host_var('POUET')
         ...
@@ -33,12 +36,50 @@ Usage:
 - Then::
 
     CHOST=arm-hardfloat-linux-gnueabi waf configure
-
     env arm-hardfloat-linux-gnueabi-CC="clang -..." waf configure
-
     CFLAGS=... CHOST=arm-hardfloat-linux-gnueabi HOST_CFLAGS=-g waf configure
-
     HOST_CC="clang -..." waf configure
+
+This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH):
+
+.. code:: python
+
+		from waflib import Configure
+		from waflib.Tools import ccroot,gcc
+
+		#from https://gist.github.com/rpuntaie/2bddfb5d7b77db26415ee14371289971
+		import waf_variants 
+
+		variants='pc fw/variant1 fw/variant2'.split()
+
+		top = "."
+		out = "../build"
+
+		PIC = '33FJ128GP804'#dsPICxxx
+
+		@Configure.conf
+		def gcc_modifier_xc16(cfg):
+				v = cfg.env
+				v.cprogram_PATTERN    = '%s.elf'
+				v.LINKFLAGS_cprogram = ','.join(['-Wl','','','--defsym=__MPLAB_BUILD=0','','--script=p'+PIC+'.gld',
+						'--stack=16','--check-sections','--data-init','--pack-data','--handles','--isr','--no-gc-sections',
+						'--fill-upper=0','--stackguard=16','--no-force-link','--smart-io'])#,'--report-mem'])
+				v.CFLAGS_cprogram=['-mcpu='+PIC,'-omf=elf','-mlarge-code','-msmart-io=1',
+						'-msfr-warn=off','-mno-override-inline','-finline','-Winline']
+
+		def configure(cfg):
+				if 'fw' in cfg.variant:#firmware
+						cfg.env.DEST_OS = 'xc16'
+						cfg.gcc_common_flags()
+						cfg.gcc_modifier_platform()
+						cfg.cc_load_tools()
+						cfg.cc_add_flags()
+						cfg.link_add_flags()
+						cfg.load('c cfg_cross_gnu')
+						cfg.xcheck_host()
+						cfg.env.DEFINES=['GESTIM'+cfg.variant.upper()]
+				else:#configure for pc SW
+						...
 
 """
 
@@ -65,7 +106,7 @@ def get_chost_stuff(conf):
 @Configure.conf
 def xcheck_envar(conf, name, wafname=None, cross=False):
 	wafname = wafname or name
-	envar = os.environ.get(name)
+	envar = os.environ.get(name) or conf.env.DEST_OS
 
 	if envar is None:
 		return
