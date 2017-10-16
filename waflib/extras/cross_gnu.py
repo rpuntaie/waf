@@ -24,10 +24,9 @@ Usage:
 
     def configure(cfg):
       ...
-      conf.load('cfg_cross_gnu')
       for variant in x_variants:
 		setenv(variant)
-        conf.xcheck_host()
+        conf.load('cross_gnu')
         conf.xcheck_host_var('POUET')
         ...
 
@@ -45,7 +44,6 @@ This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH)
 .. code:: python
 
 		from waflib import Configure
-		from waflib.Tools import ccroot,gcc
 
 		#from https://gist.github.com/rpuntaie/2bddfb5d7b77db26415ee14371289971
 		import waf_variants 
@@ -70,13 +68,7 @@ This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH)
 		def configure(cfg):
 				if 'fw' in cfg.variant:#firmware
 						cfg.env.DEST_OS = 'xc16'
-						cfg.gcc_common_flags()
-						cfg.gcc_modifier_platform()
-						cfg.cc_load_tools()
-						cfg.cc_add_flags()
-						cfg.link_add_flags()
-						cfg.load('c cfg_cross_gnu')
-						cfg.xcheck_host()
+						cfg.load('c cross_gnu')
 						cfg.env.DEFINES=['GESTIM'+cfg.variant.upper()]
 				else:#configure for pc SW
 						...
@@ -92,6 +84,7 @@ This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH)
 
 import os
 from waflib import Utils, Configure
+from waflib.Tools import ccroot,gcc
 
 try:
 	from shlex import quote
@@ -222,3 +215,14 @@ def xcheck_host(conf):
 		conf.env.env['PKG_CONFIG_LIBDIR'] = conf.env.PKG_CONFIG_LIBDIR[0]
 	if conf.env.PKG_CONFIG_PATH:
 		conf.env.env['PKG_CONFIG_PATH'] = conf.env.PKG_CONFIG_PATH[0]
+
+def configure(conf):
+	"""
+	Configuration for cross_gnu
+	"""
+	conf.gcc_common_flags()
+	conf.gcc_modifier_platform()
+	conf.cc_load_tools()
+	conf.cc_add_flags()
+	conf.link_add_flags()
+	conf.xcheck_host()
