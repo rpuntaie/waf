@@ -16,28 +16,27 @@ The variables are obtained from the environment in 3 ways:
 2. By defining HOST_x
 3. By defining ${CHOST//-/_}_x
 
-else on can set ``cfg.DEST_OS``.
+else one can set ``cfg.env.CHOST`` in ``wscript`` before loading ``cross_gnu``.
 
 Usage:
 
 - In your build script::
 
-    def configure(cfg):
-      ...
-      for variant in x_variants:
-		setenv(variant)
-        conf.load('cross_gnu')
-        conf.xcheck_host_var('POUET')
-        ...
+	def configure(cfg):
+		...
+		for variant in x_variants:
+			setenv(variant)
+			conf.load('cross_gnu')
+			conf.xcheck_host_var('POUET')
+			...
 
-      ...
 
 - Then::
 
-    CHOST=arm-hardfloat-linux-gnueabi waf configure
-    env arm-hardfloat-linux-gnueabi-CC="clang -..." waf configure
-    CFLAGS=... CHOST=arm-hardfloat-linux-gnueabi HOST_CFLAGS=-g waf configure
-    HOST_CC="clang -..." waf configure
+	CHOST=arm-hardfloat-linux-gnueabi waf configure
+	env arm-hardfloat-linux-gnueabi-CC="clang -..." waf configure
+	CFLAGS=... CHOST=arm-hardfloat-linux-gnueabi HOST_CFLAGS=-g waf configure
+	HOST_CC="clang -..." waf configure
 
 This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH):
 
@@ -53,31 +52,31 @@ This example ``wscript`` compiles to Microchip PIC (xc16-gcc,.. must be in PATH)
 		top = "."
 		out = "../build"
 
-		PIC = '33FJ128GP804'#dsPICxxx
+		PIC = '33FJ128GP804' #dsPICxxx
 
 		@Configure.conf
 		def gcc_modifier_xc16(cfg):
 				v = cfg.env
-				v.cprogram_PATTERN    = '%s.elf'
+				v.cprogram_PATTERN = '%s.elf'
 				v.LINKFLAGS_cprogram = ','.join(['-Wl','','','--defsym=__MPLAB_BUILD=0','','--script=p'+PIC+'.gld',
 						'--stack=16','--check-sections','--data-init','--pack-data','--handles','--isr','--no-gc-sections',
-						'--fill-upper=0','--stackguard=16','--no-force-link','--smart-io'])#,'--report-mem'])
+						'--fill-upper=0','--stackguard=16','--no-force-link','--smart-io']) #,'--report-mem'])
 				v.CFLAGS_cprogram=['-mcpu='+PIC,'-omf=elf','-mlarge-code','-msmart-io=1',
 						'-msfr-warn=off','-mno-override-inline','-finline','-Winline']
 
 		def configure(cfg):
-				if 'fw' in cfg.variant:#firmware
-						cfg.env.DEST_OS = 'xc16'
-						cfg.load('c cross_gnu')
-						cfg.env.DEFINES=['GESTIM'+cfg.variant.upper()]
-				else:#configure for pc SW
+				if 'fw' in cfg.variant: #firmware
+						cfg.env.DEST_OS = 'xc16' #cfg.env.CHOST = 'xc16' #works too
+						cfg.load('c cross_gnu') #cfg.env.CHOST becomes ['xc16']
+						...
+				else: #configure for pc SW
 						...
 
 		def build(bld):
-				if 'fw' in bld.variant:#firmware
+				if 'fw' in bld.variant: #firmware
 						bld.program(source='maintst.c',target='maintst');
-						bld(source='maintst.elf',target='maintst.hex',rule="xc16-bin2hex ${SRC} -a -omf=elf")  
-				else:#build for pc SW
+						bld(source='maintst.elf',target='maintst.hex',rule="xc16-bin2hex ${SRC} -a -omf=elf")
+				else: #build for pc SW
 						...
 
 """
@@ -104,14 +103,18 @@ def get_chost_stuff(conf):
 
 
 @Configure.conf
-def xcheck_envar(conf, name, wafname=None, cross=False):
+def xcheck_var(conf, name, wafname=None, cross=False):
 	wafname = wafname or name
-	envar = os.environ.get(name) or conf.env.DEST_OS
 
-	if envar is None:
-		return
-
-	value = Utils.to_list(envar) if envar != '' else [envar]
+	if wafname not in conf.env:
+		envar = os.environ.get(name)
+		if not envar:
+			return
+		value = Utils.to_list(envar) if envar != '' else [envar]
+	else:
+		value = conf.env[wafname]
+		if isinstance(value,str):
+			value = [value]
 
 	conf.env[wafname] = value
 	if cross:
@@ -193,7 +196,9 @@ def xcheck_host_envar(conf, name, wafname=None):
 
 @Configure.conf
 def xcheck_host(conf):
-	conf.xcheck_envar('CHOST', cross=True)
+	conf.xcheck_var('CHOST', cross=True)
+	conf.env.CHOST = conf.env.CHOST or [conf.env.DEST_OS]
+	conf.env.DEST_OS = conf.env.CHOST[0]
 	conf.xcheck_host_prog('CC', 'gcc')
 	conf.xcheck_host_prog('CXX', 'g++')
 	conf.xcheck_host_prog('LINK_CC', 'gcc')
@@ -220,9 +225,9 @@ def configure(conf):
 	"""
 	Configuration for cross_gnu
 	"""
+	conf.xcheck_host()
 	conf.gcc_common_flags()
 	conf.gcc_modifier_platform()
 	conf.cc_load_tools()
 	conf.cc_add_flags()
 	conf.link_add_flags()
-	conf.xcheck_host()
