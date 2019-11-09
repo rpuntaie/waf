@@ -279,6 +279,14 @@ class Node(object):
 		"""
 		return os.path.isdir(self.abspath())
 
+	def islink(self):
+		"""
+		Returns whether the Node represents a symbolic link
+
+		:rtype: bool
+		"""
+		return os.path.islink(self.abspath())
+
 	def chmod(self, val):
 		"""
 		Changes the file/dir permissions::
@@ -573,7 +581,7 @@ class Node(object):
 			p = p.parent
 		return p is node
 
-	def ant_iter(self, accept=None, maxdepth=25, pats=[], dir=False, src=True, remove=True, quiet=False):
+	def ant_iter(self, accept=None, maxdepth=25, pats=[], dir=False, src=True, remove=True, quiet=False, followlinks=False):
 		"""
 		Recursive method used by :py:meth:`waflib.Node.ant_glob`.
 
@@ -591,6 +599,8 @@ class Node(object):
 		:type remove: bool
 		:param quiet: disable build directory traversal warnings (verbose mode)
 		:type quiet: bool
+		:param followlinks: follow symbolic links (Falsle by default)
+		:type followlinks: bool
 		:returns: A generator object to iterate from
 		:rtype: iterator
 		"""
@@ -622,9 +632,10 @@ class Node(object):
 
 				if isdir:
 					node.cache_isdir = True
-					if maxdepth:
-						for k in node.ant_iter(accept=accept, maxdepth=maxdepth - 1, pats=npats, dir=dir, src=src, remove=remove, quiet=quiet):
-							yield k
+					if followlinks or not node.islink():
+						if maxdepth:
+							for k in node.ant_iter(accept=accept, maxdepth=maxdepth - 1, pats=npats, dir=dir, src=src, remove=remove, quiet=quiet, followlinks=followlinks):
+								yield k
 
 	def ant_glob(self, *k, **kw):
 		"""
@@ -701,6 +712,8 @@ class Node(object):
 		:type remove: bool
 		:param quiet: disable build directory traversal warnings (verbose mode)
 		:type quiet: bool
+		:param followlinks: follow symbolic links (Falsle by default)
+		:type followlinks: bool
 		:returns: The corresponding Node objects as a list or as a generator object (generator=True)
 		:rtype: by default, list of :py:class:`waflib.Node.Node` instances
 		"""
@@ -712,12 +725,13 @@ class Node(object):
 		maxdepth = kw.get('maxdepth', 25)
 		ignorecase = kw.get('ignorecase', False)
 		quiet = kw.get('quiet', False)
+		followlinks = kw.get('followlinks', False)
 		pats = (ant_matcher(incl, ignorecase), ant_matcher(excl, ignorecase))
 
 		if kw.get('generator'):
-			return Utils.lazy_generator(self.ant_iter, (ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet))
+			return Utils.lazy_generator(self.ant_iter, (ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet, followlinks))
 
-		it = self.ant_iter(ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet)
+		it = self.ant_iter(ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet, followlinks)
 		if kw.get('flat'):
 			# returns relative paths as a space-delimited string
 			# prefer Node objects whenever possible
