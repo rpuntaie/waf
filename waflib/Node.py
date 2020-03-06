@@ -599,7 +599,7 @@ class Node(object):
 		:type remove: bool
 		:param quiet: disable build directory traversal warnings (verbose mode)
 		:type quiet: bool
-		:param followlinks: follow symbolic links (Falsle by default)
+		:param followlinks: follow symbolic links (False by default)
 		:type followlinks: bool
 		:returns: A generator object to iterate from
 		:rtype: iterator
@@ -712,7 +712,7 @@ class Node(object):
 		:type remove: bool
 		:param quiet: disable build directory traversal warnings (verbose mode)
 		:type quiet: bool
-		:param followlinks: follow symbolic links (Falsle by default)
+		:param followlinks: follow symbolic links (False by default)
 		:type followlinks: bool
 		:returns: The corresponding Node objects as a list or as a generator object (generator=True)
 		:rtype: by default, list of :py:class:`waflib.Node.Node` instances
