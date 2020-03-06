@@ -193,3 +193,5 @@ def test(ctx):
 
 	remove('a')
 	remove('src')
+	remove('1234')
+	remove('d.TXT')
