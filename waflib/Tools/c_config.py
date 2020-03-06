@@ -107,6 +107,8 @@ def parse_flags(self, line, uselib_store, env=None, force_static=False, posix=No
 	lex.commenters = ''
 	lst = list(lex)
 
+	so_re = re.compile(r"\.so(?:\.[0-9]+)*$")
+
 	# append_unique is not always possible
 	# for example, apple flags may require both -arch i386 and -arch ppc
 	uselib = uselib_store
@@ -184,7 +186,7 @@ def parse_flags(self, line, uselib_store, env=None, force_static=False, posix=No
 			app('CFLAGS', tmp)
 			app('CXXFLAGS', tmp)
 			app('LINKFLAGS', tmp)
-		elif x.endswith(('.a', '.so', '.dylib', '.lib')):
+		elif x.endswith(('.a', '.dylib', '.lib')) or so_re.search(x):
 			appu('LINKFLAGS', x) # not cool, #762
 		else:
 			self.to_log('Unhandled flag %r' % x)
@@ -1280,10 +1282,11 @@ def multicheck(self, *k, **kw):
 	tasks = []
 
 	id_to_task = {}
-	for dct in k:
+	for counter, dct in enumerate(k):
 		x = Task.classes['cfgtask'](bld=bld, env=None)
 		tasks.append(x)
 		x.args = dct
+		x.args['multicheck_counter'] = counter
 		x.bld = bld
 		x.conf = self
 		x.args = dct
