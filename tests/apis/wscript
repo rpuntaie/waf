@@ -146,7 +146,10 @@ def test(ctx):
 	nd3 = bld.srcnode.make_node('e.e+(e).txt')
 	nd3.write("test")
 	create('src/a.txt')
-	os.remove("src/src")
+	try:
+		os.remove("src/src")
+	except FileNotFoundError:
+		pass
 	os.symlink("../src","src/src")
 
 	tt("ant_glob ->", len(bld.srcnode.ant_glob('*.txt', flat=False)), 2)
@@ -188,3 +191,5 @@ def test(ctx):
 	if errors:
 		bld.fatal('There are test failures ^^')
 
+	remove('a')
+	remove('src')
